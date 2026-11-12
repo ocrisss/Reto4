@@ -1,0 +1,10 @@
+# Configura el logger: archivo, nivel, formato y codificación
+# Configura el logger: archivo, nivel, formato y codificación
+logging.basicConfig(
+    filename="software_fj.log",          # Nombre del archivo donde se guardan los registros
+ level=logging.INFO,                  # Registra eventos desde nivel INFO hacia arriba
+format="%(asctime)s | %(levelname)s | %(message)s",  # Formato: fecha | nivel | mensaje
+    encoding="utf-8",                    # Codificación para admitir tildes y ñ
+)
+# Crea un logger propio para el sistema
+logger = logging.getLogger("SoftwareFJ")
