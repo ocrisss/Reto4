@@ -1,0 +1,51 @@
+class Reserva(Entidad):
+    """Integra cliente, servicio, duración y estado."""
+
+    PENDIENTE, CONFIRMADA, CANCELADA = "PENDIENTE", "CONFIRMADA", "CANCELADA"
+
+    def __init__(self, identificador, cliente, servicio, horas):
+        super().__init__(identificador)
+        if not isinstance(cliente, Cliente) or not isinstance(servicio, Servicio):
+            raise ReservaInvalidaError("Se requiere un Cliente y un Servicio válidos.")
+        try:
+            horas = float(horas)                        # Intenta convertir la duración
+        except (TypeError, ValueError) as e:
+            # Encadenamiento de excepciones: conserva la causa original con 'from e'
+            raise ReservaInvalidaError(f"Duración no numérica: '{horas}'.") from e
+        if horas <= 0:                                  # Duración debe ser positiva
+            raise ReservaInvalidaError(f"La duración debe ser mayor que 0: {horas}.")
+        self.cliente, self.servicio, self.horas = cliente, servicio, horas
+        self.estado = self.PENDIENTE                    # Estado inicial
+        self.costo = None                               # Se calcula al procesar
+
+    def confirmar(self):
+        if self.estado == self.CANCELADA:               # No se confirma lo cancelado
+            raise OperacionNoPermitidaError(
+                f"La reserva #{self.id} está cancelada y no puede confirmarse.")
+        if not self.servicio.disponible:                # Servicio debe estar disponible
+            raise ServicioNoDisponibleError(f"'{self.servicio.nombre}' no está disponible.")
+        self.estado = self.CONFIRMADA
+
+    def cancelar(self):
+        if self.estado == self.CANCELADA:               # No se cancela dos veces
+            raise OperacionNoPermitidaError(f"La reserva #{self.id} ya estaba cancelada.")
+        self.estado = self.CANCELADA
+
+    def procesar(self, impuesto=0.19, descuento=0.0):
+        """Confirma y calcula el costo usando try/except/else/finally."""
+        try:
+            self.confirmar()                            # Puede lanzar errores controlados
+            costo = self.servicio.calcular_costo(self.horas, impuesto, descuento)
+        except CalculoInconsistenteError as e:          # Error de cálculo: se encadena
+            raise ReservaInvalidaError(f"No se pudo procesar la reserva #{self.id}.") from e
+        else:                                           # Solo si NO hubo excepción
+            self.costo = costo
+            logger.info("Reserva #%s procesada: costo $%s", self.id, costo)
+            return costo
+        finally:                                        # Siempre se ejecuta
+            logger.info("Fin de procesamiento de la reserva #%s (estado %s)",
+                        self.id, self.estado)
+
+    def describir(self):
+        return (f"Reserva #{self.id}: {self.cliente.nombre} -> {self.servicio.nombre}, "
+                f"{self.horas} h, estado {self.estado}, costo {self.costo}")
