@@ -1,0 +1,61 @@
+def ejecutar_simulacion():
+    """Ejecuta 10 operaciones y verifica que cada resultado coincida con lo esperado."""
+    g = GestorFJ()                                      # Gestor del sistema
+    ctx = {}                                            # Guarda objetos entre operaciones
+
+    def op1():  ctx["ana"] = g.registrar_cliente("Ana Pérez", "ana@correo.com", "3001234567")
+    def op2():  g.registrar_cliente("Luis Gómez", "luis-correo.com", "3109876543")
+    def op3():  g.registrar_cliente(email="sofia@correo.com", telefono="3151112233")
+    def op4():  ctx["sala"] = g.crear_servicio(ReservaSala, "Sala Ejecutiva", 50000, 12)
+    def op5():  g.crear_servicio(AlquilerEquipo, "Proyector HD", -15000, "Proyector")
+    def op6():  ctx["res"] = g.crear_reserva(ctx["ana"], ctx["sala"], 3, descuento=0.10)
+    def op7():  g.crear_reserva(ctx["ana"], ctx["sala"], "abc")
+    def op8():
+        ase = g.crear_servicio(Asesoria, "Asesoría Cloud", 80000, "senior", disponible=False)
+        g.crear_reserva(ctx["ana"], ase, 2)
+    def op9():  ctx["res"].cancelar()
+    def op10(): ctx["res"].confirmar()
+
+    # (número, descripción, función, resultado esperado)
+    operaciones = [
+        (1, "Cliente válido", op1, "OK"),
+        (2, "Cliente con email inválido", op2, "ERROR"),
+        (3, "Cliente con nombre faltante", op3, "ERROR"),
+        (4, "Servicio válido (sala)", op4, "OK"),
+        (5, "Servicio con tarifa negativa", op5, "ERROR"),
+        (6, "Reserva exitosa con 10% descuento", op6, "OK"),
+        (7, "Reserva con duración inválida", op7, "ERROR"),
+        (8, "Reserva de servicio no disponible", op8, "ERROR"),
+        (9, "Cancelar reserva", op9, "OK"),
+        (10, "Confirmar reserva cancelada", op10, "ERROR"),
+    ]
+
+    resultados = []                                     # Guarda (num, esperado, obtenido)
+    for num, desc, funcion, esperado in operaciones:
+        try:
+            funcion()                                   # Ejecuta la operación
+        except ErrorSoftwareFJ as e:                    # Error controlado del sistema
+            registrar_error(f"Operación {num} ({desc})", e)
+            obtenido = "ERROR"
+            print(f"Operación {num:>2}: {desc:<38} -> ERROR controlado: {e}")
+        except Exception as e:                          # Cualquier error inesperado
+            registrar_error(f"Operación {num} ({desc}) [INESPERADO]", e)
+            obtenido = "ERROR"
+            print(f"Operación {num:>2}: {desc:<38} -> ERROR inesperado: {e}")
+        else:
+            obtenido = "OK"
+            print(f"Operación {num:>2}: {desc:<38} -> OK")
+        resultados.append((num, esperado, obtenido))    # Guarda para la verificación
+
+    # ------------------------------------------------ VERIFICACIÓN FINAL
+    print("\n=== VERIFICACIÓN ===")
+    fallos = [n for n, esp, obt in resultados if esp != obt]
+    for n, esp, obt in resultados:
+        marca = "✔" if esp == obt else "✘"
+        print(f"  {marca} Op {n:>2}: esperado {esp:<5} | obtenido {obt}")
+    print(f"\nReserva final: {ctx['res'].describir()}")
+    print(f"Clientes: {len(g.clientes)} | Servicios: {len(g.servicios)} | "
+          f"Reservas: {len(g.reservas)}")
+    print("RESULTADO:", "TODAS LAS OPERACIONES VERIFICADAS" if not fallos
+          else f"FALLARON: {fallos}")
+    logger.info("Simulación terminada. Fallos de verificación: %s", fallos or "ninguno")
