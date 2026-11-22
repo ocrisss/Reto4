@@ -1,0 +1,17 @@
+ARCHIVO_LOG = "software_fj.log"     # Nombre del archivo donde se registran eventos y errores
+logging.basicConfig(                # Configura el sistema de logs
+    filename=ARCHIVO_LOG,           # Archivo de destino
+    filemode="a",                   # 'a' = acumula (no borra ejecuciones anteriores)
+    level=logging.INFO,             # Registra desde nivel INFO hacia arriba
+    format="%(asctime)s | %(levelname)s | %(message)s",  # Fecha | nivel | mensaje
+    encoding="utf-8",               # Permite tildes y eñes
+)
+logger = logging.getLogger("SoftwareFJ")  # Logger propio del sistema
+
+
+def registrar_error(contexto, error):
+    """Escribe un error en el log, incluyendo la causa original si hay encadenamiento."""
+    logger.error("%s | %s: %s", contexto, type(error).__name__, error)  # Línea principal
+    if error.__cause__ is not None:  # Si la excepción fue encadenada con 'raise ... from'
+        logger.error("   Causa original -> %s: %s",
+                     type(error.__cause__).__name__, error.__cause__)  # Registra la causa
