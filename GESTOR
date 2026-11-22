@@ -1,0 +1,23 @@
+class GestorFJ:
+    """Administra las listas internas (sin base de datos)."""
+
+    def __init__(self):
+        self.clientes, self.servicios, self.reservas = [], [], []  # Listas internas
+
+    def registrar_cliente(self, nombre=None, email=None, telefono=None):
+        cliente = Cliente(len(self.clientes) + 1, nombre, email, telefono)
+        self.clientes.append(cliente)
+        logger.info("Cliente registrado: %s", cliente.describir())
+        return cliente
+
+    def crear_servicio(self, clase, *args, **kwargs):
+        servicio = clase(len(self.servicios) + 1, *args, **kwargs)
+        self.servicios.append(servicio)
+        logger.info("Servicio creado: %s", servicio.describir())
+        return servicio
+
+    def crear_reserva(self, cliente, servicio, horas, descuento=0.0):
+        reserva = Reserva(len(self.reservas) + 1, cliente, servicio, horas)
+        reserva.procesar(descuento=descuento)
+        self.reservas.append(reserva)
+        return reserva
