@@ -1,0 +1,132 @@
+class Cliente(Entidad):
+    """Cliente con validaciones estrictas y datos personales encapsulados."""
+
+    def __init__(self, identificador, nombre=None, email=None, telefono=None):
+        super().__init__(identificador)                 # Inicializa la clase base
+        if not nombre or not str(nombre).strip():       # Nombre faltante o vacío
+            raise ClienteInvalidoError("El nombre es obligatorio.")
+        if not email:                                   # Email faltante
+            raise ClienteInvalidoError("El email es obligatorio.")
+        if not re.fullmatch(r"[\w.+-]+@[\w-]+(\.[\w-]+)+", str(email)):  # Formato del email
+            raise ClienteInvalidoError(f"Email inválido: '{email}'.")
+        if not str(telefono).isdigit() or not 7 <= len(str(telefono)) <= 10:  # 7 a 10 dígitos
+            raise ClienteInvalidoError(f"Teléfono inválido: '{telefono}'.")
+        self.__nombre = str(nombre).strip()             # Atributos privados (encapsulación)
+        self.__email = str(email)
+        self.__telefono = str(telefono)
+
+    @property
+    def nombre(self):                                   # Acceso controlado al nombre
+        return self.__nombre
+
+    @property
+    def email(self):                                    # Acceso controlado al email
+        return self.__email
+
+    def describir(self):                                # Implementa el método abstracto
+        return f"Cliente #{self.id}: {self.__nombre} <{self.__email}>"
+
+
+# ------------------------------------------------------------------ SERVICIOS
+class Servicio(Entidad, ABC):
+    """Clase abstracta Servicio: define el contrato de todos los servicios."""
+
+    def __init__(self, identificador, nombre, tarifa_hora, disponible=True):
+        super().__init__(identificador)                 # Inicializa la entidad base
+        self._nombre = nombre                           # Nombre del servicio
+        self._tarifa_hora = tarifa_hora                 # Tarifa por hora
+        self._disponible = disponible                   # Disponibilidad actual
+        self.validar_parametros()                       # Validación polimórfica
+
+    @property
+    def nombre(self):
+        return self._nombre
+
+    @property
+    def disponible(self):
+        return self._disponible
+
+    def validar_parametros(self):
+        """Validación común; las subclases la sobrescriben y amplían."""
+        if not self._nombre or not str(self._nombre).strip():
+            raise ServicioInvalidoError("El nombre del servicio es obligatorio.")
+        if not isinstance(self._tarifa_hora, (int, float)) or self._tarifa_hora <= 0:
+            raise ServicioInvalidoError(f"Tarifa inválida: {self._tarifa_hora}.")
+
+    @abstractmethod
+    def calcular_costo(self, horas, impuesto=0.19, descuento=0.0):
+        """Costo final. Parámetros opcionales = métodos 'sobrecargados' en Python."""
+
+    def _aplicar_impuesto_descuento(self, base, impuesto, descuento):
+        """Aplica descuento e impuesto sobre un costo base (reutilizado por las hijas)."""
+        if not 0 <= descuento < 1:                      # Descuento debe estar en [0, 1)
+            raise CalculoInconsistenteError(f"Descuento inconsistente: {descuento}.")
+        if impuesto < 0:                                # Impuesto no puede ser negativo
+            raise CalculoInconsistenteError(f"Impuesto inconsistente: {impuesto}.")
+        return round(base * (1 - descuento) * (1 + impuesto), 2)
+
+
+class ReservaSala(Servicio):
+    """Servicio especializado 1: reserva de salas."""
+
+    def __init__(self, identificador, nombre, tarifa_hora, capacidad, disponible=True):
+        self._capacidad = capacidad                     # Se guarda antes de validar
+        super().__init__(identificador, nombre, tarifa_hora, disponible)
+
+    def validar_parametros(self):                       # Sobrescribe la validación
+        super().validar_parametros()                    # Reutiliza la validación común
+        if not isinstance(self._capacidad, int) or self._capacidad <= 0:
+            raise ServicioInvalidoError(f"Capacidad inválida: {self._capacidad}.")
+
+    def calcular_costo(self, horas, impuesto=0.19, descuento=0.0):
+        base = self._tarifa_hora * horas                # Costo base por horas
+        if self._capacidad > 20:                        # Salas grandes: 10 % de recargo
+            base *= 1.10
+        return self._aplicar_impuesto_descuento(base, impuesto, descuento)
+
+    def describir(self):
+        return f"Sala '{self._nombre}' (capacidad {self._capacidad}) - ${self._tarifa_hora}/h"
+
+
+class AlquilerEquipo(Servicio):
+    """Servicio especializado 2: alquiler de equipos."""
+
+    DEPOSITO = 20000                                    # Depósito fijo por alquiler
+
+    def __init__(self, identificador, nombre, tarifa_hora, tipo_equipo, disponible=True):
+        self._tipo_equipo = tipo_equipo
+        super().__init__(identificador, nombre, tarifa_hora, disponible)
+
+    def validar_parametros(self):
+        super().validar_parametros()
+        if not self._tipo_equipo or not str(self._tipo_equipo).strip():
+            raise ServicioInvalidoError("El tipo de equipo es obligatorio.")
+
+    def calcular_costo(self, horas, impuesto=0.19, descuento=0.0):
+        base = self._tarifa_hora * horas + self.DEPOSITO  # Horas + depósito
+        return self._aplicar_impuesto_descuento(base, impuesto, descuento)
+
+    def describir(self):
+        return f"Equipo '{self._nombre}' ({self._tipo_equipo}) - ${self._tarifa_hora}/h + depósito"
+
+
+class Asesoria(Servicio):
+    """Servicio especializado 3: asesorías especializadas."""
+
+    RECARGOS = {"junior": 1.0, "senior": 1.5}           # Multiplicador por nivel
+
+    def __init__(self, identificador, nombre, tarifa_hora, nivel, disponible=True):
+        self._nivel = nivel
+        super().__init__(identificador, nombre, tarifa_hora, disponible)
+
+    def validar_parametros(self):
+        super().validar_parametros()
+        if self._nivel not in self.RECARGOS:
+            raise ServicioInvalidoError(f"Nivel de asesoría inválido: '{self._nivel}'.")
+
+    def calcular_costo(self, horas, impuesto=0.19, descuento=0.0):
+        base = self._tarifa_hora * horas * self.RECARGOS[self._nivel]
+        return self._aplicar_impuesto_descuento(base, impuesto, descuento)
+
+    def describir(self):
+        return f"Asesoría '{self._nombre}' nivel {self._nivel} - ${self._tarifa_hora}/h"
