@@ -1,37 +1,21 @@
 class ErrorSoftwareFJ(Exception):
     """Excepción base de todo el sistema."""
-    # 'pass' porque solo hereda el comportamiento de Exception
-    pass
-class ErrorValidacion(ErrorSoftwareFJ):
-    """Se lanza cuando un dato es inválido o falta un parámetro."""
-    pass
- 
- 
-class ClienteInvalidoError(ErrorValidacion):
-    """Se lanza cuando los datos de un cliente no son válidos."""
-    pass
- 
- 
+
+class ClienteInvalidoError(ErrorSoftwareFJ):
+    """Datos de cliente inválidos o faltantes."""
+
+class ServicioInvalidoError(ErrorSoftwareFJ):
+    """Parámetros de servicio inválidos."""
+
 class ServicioNoDisponibleError(ErrorSoftwareFJ):
-    """Se lanza cuando un servicio no está disponible para reservar."""
-    pass
- 
- 
-class ParametroServicioError(ErrorValidacion):
-    """Se lanza cuando los parámetros de un servicio son inválidos."""
-    pass
- 
- 
+    """El servicio solicitado no está disponible."""
+
 class ReservaInvalidaError(ErrorSoftwareFJ):
-    """Se lanza ante intentos de reserva incorrectos."""
-    pass
- 
- 
+    """Reserva mal formada o con datos incorrectos."""
+
 class OperacionNoPermitidaError(ErrorSoftwareFJ):
-    """Se lanza cuando se intenta una operación no permitida por el estado."""
-    pass
- 
- 
+    """Operación no permitida para el estado actual."""
+
 class CalculoInconsistenteError(ErrorSoftwareFJ):
-    """Se lanza cuando un cálculo de costos produce un resultado inconsistente."""
-    pass
+    """Cálculo de costos con valores inconsistentes."""
+
