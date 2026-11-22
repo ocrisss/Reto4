@@ -1,0 +1,13 @@
+class Entidad(ABC):
+    """Entidad general del sistema (abstracción)."""
+
+    def __init__(self, identificador):
+        self._id = identificador    # Identificador encapsulado (atributo protegido)
+
+    @property
+    def id(self):                   # Solo lectura: no se puede modificar desde fuera
+        return self._id
+
+    @abstractmethod
+    def describir(self):            # Cada entidad debe describirse a sí misma
+        """Devuelve una descripción en texto."""
